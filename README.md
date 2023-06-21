@@ -1,1 +1,0 @@
-# tg-bot-buy-things-service

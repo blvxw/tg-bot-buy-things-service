@@ -1,0 +1,33 @@
+{
+    "en": {
+        "start": "Hello, I'm a bot that will help you find the right product.",
+        "user_not_found": "User not found",
+        "password_incorrect": "Password incorrect",
+        "password_standart": "Password must be at least 8 characters",
+        "basket": "Basket"
+    },
+
+    "pl": {
+        "start": "Cześć, jestem botem, który pomoże Ci znaleźć odpowiedni produkt.",
+        "user_not_found": "Użytkownik nie znaleziony",
+        "password_incorrect": "Hasło nieprawidłowe",
+        "password_standart": "Hasło musi mieć co najmniej 8 znaków",
+        "basket": "Koszyk"
+    },
+
+    "ru": {
+        "start": "Привет, я бот, который поможет вам найти нужный товар.",
+        "user_not_found": "Пользователь не найден",
+        "password_incorrect": "Неверный пароль",
+        "password_standart": "Пароль должен быть не менее 8 символов",
+        "basket": "Корзина"
+    },
+
+    "ua": {
+        "start": "Привіт, я бот, який допоможе вам знайти потрібний товар.",
+        "user_not_found": "Користувач не знайдений",
+        "password_incorrect": "Неправильний пароль",
+        "password_standart": "Пароль повинен бути не менше 8 символів",
+        "basketT": "Кошик"
+    }
+}

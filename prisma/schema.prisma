@@ -1,0 +1,49 @@
+generator client {
+  provider = "prisma-client-py"  
+  recursive_type_depth = 5
+}
+
+datasource db { 
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum Language {
+  en
+  ru
+  ua
+  pl
+}
+
+model User {
+  id          String     @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  surname     String
+  phone       String
+  telegram_id String @unique
+  email       String @unique
+  password    String
+  language    Language @default(en)
+  role        Role @default(USER)
+  login       Boolean @default(false)
+}
+
+model Category {
+  id        String     @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  products  Product[]
+}
+
+model Product{
+  id          String     @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  description String
+  price       Float
+  categoryId  String     @db.ObjectId
+  category    Category @relation(fields: [categoryId], references: [id])
+}
