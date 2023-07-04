@@ -86,7 +86,8 @@ async def create_user(bot,message,state,telegram_id):
         surname = data['surname'],
         phone = data['phone'],
         email = data['email'],
-        language = data['language']
+        language = data['language'],
+        role = 'USER'
     )
     
     if user.allFieldsFilled() == False:

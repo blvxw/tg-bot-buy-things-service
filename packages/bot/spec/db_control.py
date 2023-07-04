@@ -1,5 +1,4 @@
 from packages.services.prisma_service import PrismaService
-import asyncio
 
 async def clear_database():
     prisma_service = PrismaService()

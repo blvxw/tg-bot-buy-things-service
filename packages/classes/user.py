@@ -8,14 +8,16 @@ class User():
         self.phone = None
         self.email = None
         self.language = None
-
-    def __init__(self, telegram_id, name, surname, phone, email, language):
+        self.role = None
+        
+    def __init__(self, telegram_id, name, surname, phone, email, language,role):
         self.telegram_id = telegram_id
         self.name = name
         self.surname = surname
         self.phone = phone
         self.email = email
         self.language = language
+        self.role = role
 
     def allFieldsFilled(self):
         return self.telegram_id and self.name and self.surname and self.phone and self.email and self.language
