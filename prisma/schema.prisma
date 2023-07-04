@@ -22,28 +22,74 @@ enum Language {
 
 model User {
   id          String     @id @default(auto()) @map("_id") @db.ObjectId
-  name        String
-  surname     String
-  phone       String
-  telegram_id String @unique
+  name        String 
+  surname     String 
+  phone       String @unique
+  telegram_id String @unique 
   email       String @unique
-  password    String
-  language    Language @default(en)
+  language    Language
   role        Role @default(USER)
-  login       Boolean @default(false)
+  cart       Cart[]
+}
+
+model ProductVariant {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  productId   String   @db.ObjectId
+  color       String
+  sizes       Size[]
+  discounts   Discount[]
+  product     Product  @relation(fields: [productId], references: [id])
+  cartItems   cartItem[]
+}
+
+model Size {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  quantity    Int
+  variantId   String   @db.ObjectId
+  variant     ProductVariant @relation(fields: [variantId], references: [id])
+}
+
+model Discount {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  value       Float
+  variantId   String   @db.ObjectId
+  variant     ProductVariant @relation(fields: [variantId], references: [id])
+}
+
+model Product {
+  id            String           @id @default(auto()) @map("_id") @db.ObjectId 
+  name          String
+  description   String
+  price         Float
+  discount      Float
+  photos      String[]
+  categoryId    String           @db.ObjectId
+  category      Category         @relation(fields: [categoryId], references: [id])
+  variants      ProductVariant[]
+  cartItems     cartItem[]
 }
 
 model Category {
-  id        String     @id @default(auto()) @map("_id") @db.ObjectId
-  name      String
-  products  Product[]
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  products    Product[]
 }
 
-model Product{
-  id          String     @id @default(auto()) @map("_id") @db.ObjectId
-  name        String
-  description String
-  price       Float
-  categoryId  String     @db.ObjectId
-  category    Category @relation(fields: [categoryId], references: [id])
+model Cart{
+    id         String    @id @default(auto()) @map("_id") @db.ObjectId
+    userId      String    @db.ObjectId
+    user       User      @relation(fields: [userId], references: [id])
+    items       cartItem[]
+}
+
+model cartItem{
+    id          String    @id @default(auto()) @map("_id") @db.ObjectId
+    productId   String    @db.ObjectId
+    productVariantId String @db.ObjectId
+    quantity    Int
+    cartId      String    @db.ObjectId
+    cart        Cart      @relation(fields: [cartId], references: [id])
+    product     Product   @relation(fields: [productId], references: [id])
+    productVariant ProductVariant @relation(fields: [productVariantId], references: [id])
 }

@@ -1,15 +1,12 @@
 import json
 from packages.services.prisma_service import PrismaService
 
-async def getText(telegram_id,text):
-    language = await getLang(telegram_id)
-    # load data from json file only message which user need
+async def getTextByTelegramId(telegram_id,text):
+    language = await PrismaService().getLangByTelegramId(telegram_id)
+    return loadTextByLanguage(language,text)
+    
+def loadTextByLanguage(language,text):
     with open('resources/languages/languages.json', encoding='utf-8') as f:
         data = json.load(f)
         return data[language][text]
-    
 
-async def getLang(telegram_id):
-    prismaService = PrismaService()
-    user = await prismaService.prisma.user.find_first(where={"telegram_id": str(telegram_id)})
-    return user.language
