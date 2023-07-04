@@ -20,7 +20,8 @@ from packages.bot.admin.states.admin_state import AdminState
 #> misc
 from aiogram import types
 from aiogram.dispatcher import FSMContext
-from packages.utils.contsants import PATH_TO_PHOTO_FOLDER
+
+from resources.images.get_path import getPathToPhotoFolder
 
 lang = 'en'
 
@@ -139,7 +140,7 @@ async def handle_add_quantities(bot,message: types.Message, state: FSMContext):
 async def handle_add_photos(bot,message, state: FSMContext):    
     photo = message.photo[-1]  # Беремо лише останню (найбільшу) фотографію
     photo_name = f"{photo.file_id}.jpg"
-    await bot.download_file_by_id(photo.file_id, PATH_TO_PHOTO_FOLDER + photo_name)
+    await bot.download_file_by_id(photo.file_id, getPathToPhotoFolder() + photo_name)
     await bot.send_message(message.chat.id, loadTextByLanguage(lang,'photo_successfully_added'))
 
     data = await state.get_data()

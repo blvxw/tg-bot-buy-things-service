@@ -3,7 +3,7 @@ from packages.bot.user.states.menu import MenuState
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.types.chat import ChatActions
 from packages.services.prisma_service import PrismaService
-from packages.utils.contsants import PATH_TO_PHOTO_FOLDER
+from resources.images.get_path import getPathToPhotoFolder
 from aiogram import types
 
 index = 0
@@ -47,7 +47,7 @@ async def products_in_catalog(bot, query, state):
         return
     
     await state.update_data(products=products)
-    photo = PATH_TO_PHOTO_FOLDER + products[0].photos[0]
+    photo = getPathToPhotoFolder() + products[0].photos[0]
     prev_message = None
     with open(photo, 'rb') as photo_file:
         prev_message = await bot.send_photo(query.message.chat.id, photo_file, caption="test", reply_markup=keyboard_for_product(0, len(products)))
@@ -88,7 +88,7 @@ async def show_product(bot, message, product, current_index, total_products, pre
   
     photo = product.photos[0]
     
-    with open(PATH_TO_PHOTO_FOLDER + photo, 'rb') as photo_file:
+    with open(getPathToPhotoFolder() + photo, 'rb') as photo_file:
         try:
             await bot.edit_message_media(
                 chat_id=message.chat.id,
@@ -175,7 +175,7 @@ async def show_item(bot,message,item,prev_message_id=None):
     
     markup.row(minus_button, count_button, plus_button)
     
-    with open(PATH_TO_PHOTO_FOLDER + "1.jpg", 'rb') as photo:
+    with open(getPathToPhotoFolder() + "1.jpg", 'rb') as photo:
         await bot.send_photo(message.chat.id,photo, caption=text, reply_markup=markup, parse_mode='HTML')
     
 async def handler_btn_cart(bot,query,state):

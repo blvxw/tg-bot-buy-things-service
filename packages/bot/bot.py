@@ -1,31 +1,39 @@
-import asyncio
+
+#> bot packages
 from aiogram import Bot, Dispatcher, types
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
 
-from packages.bot.admin.handlers.admin_menu import *
-from packages.utils.env import getEnvVar
-
-# patterns
-from packages.patterns.singleton import Singleton
-
-# handlers
+#> handlers
 from packages.bot.common.handlers.start import start
 from packages.bot.common.handlers.choose_language import chooseLanguageHandler
 from packages.bot.common.handlers.auth.auth import getInfoHandler
+
+#> menu handlers
+from packages.bot.admin.handlers.admin_menu import *
 from packages.bot.user.handlers.user_menu import *
 
-
-# states
+#> states
 from packages.bot.common.states.get_info import GetInfo
 from packages.bot.user.states.menu import MenuState
 from packages.bot.admin.states.admin_state import AdminState
+
+#> utils
+from packages.utils.env import getEnvVar
+
+#> dev
+from packages.bot.spec.db_control import *
+
+#> patterns
+from packages.patterns.singleton import Singleton
 
 
 class BotApp(metaclass=Singleton):
     def __init__(self):
         self.bot = Bot(token=getEnvVar('BOT_TOKEN'))
         self.dp = Dispatcher(self.bot, storage=MemoryStorage())
+        
+        self.dev_id = getEnvVar('DEV_ID')
 
         # > ######################################################################## <#
         # / __________________________ COMMON ________________________________________
@@ -34,6 +42,7 @@ class BotApp(metaclass=Singleton):
         @self.dp.message_handler(commands=['start','s','run','r','go'])
         async def _start(message: types.Message, state: FSMContext):
             print('\033[92m[BOT][COMMAND]\033[0m start')
+            print(message.chat.id)
             await start(self.bot, message, state)
 
         # ? __________________________ CHOOSE LANGUAGE _____________________________
@@ -45,7 +54,7 @@ class BotApp(metaclass=Singleton):
         # ? __________________________ AUTH _________________________________________
         @self.dp.message_handler(state=GetInfo.authState)
         async def _authHandler(message: types.Message, state: FSMContext):
-            print('auth')
+            print('\033[92m[BOT][ACTION]\033[0m auth')
             await getInfoHandler(self.bot, message, state)
 
         # > ######################################################################## <#
@@ -129,6 +138,43 @@ class BotApp(metaclass=Singleton):
         async def _handle_add_variants(message: types.Message, state: FSMContext):
             await handle_add_variants(self.bot, message, state)
         # ?#######################################################################################
+        
+        # > ######################################################################## <#
+        # / __________________________ SPECIAL ________________________________________
+        @self.dp.message_handler(commands=['clear_db'])
+        async def _clear_db(message: types.Message, state: FSMContext):
+            if message.chat.id in self.dev_id:
+                await clear_database(self.bot, message, state)
+                print('\033[92m[BOT][COMMAND]\033[0m clear_db')
+                await self.bot.send_message(message.chat.id, 'Database cleared successfully 🗑️')
+        
+        @self.dp.message_handler(commands=['clear_users'])
+        async def _clear_users(message: types.Message, state: FSMContext):
+            if message.chat.id in self.dev_id:
+                await clear_users(self.bot, message, state)
+                print('\033[92m[BOT][COMMAND]\033[0m clear_users')
+                await self.bot.send_message(message.chat.id, 'Users cleared successfully 🗑️')
+
+        @self.dp.message_handler(commands=['clear_categories'])
+        async def _clear_categories(message: types.Message, state: FSMContext):
+            if message.chat.id in self.dev_id:
+                await clear_categories(self.bot, message, state)
+                print('\033[92m[BOT][COMMAND]\033[0m clear_categories')
+                await self.bot.send_message(message.chat.id, 'Categories cleared successfully 🗑️')    
+        
+        @self.dp.message_handler(commands=['clear_products'])
+        async def _clear_products(message: types.Message, state: FSMContext):
+            if message.chat.id in self.dev_id:
+                await clear_products(self.bot, message, state)
+                print('\033[92m[BOT][COMMAND]\033[0m clear_products')
+                await self.bot.send_message(message.chat.id, 'Products cleared successfully 🗑️')
+
+        @self.dp.message_handler(commands=['clear_cart'])
+        async def _clear_cart(message: types.Message, state: FSMContext):
+            if message.chat.id in self.dev_id:
+                await clear_cart_items(self.bot, message, state)
+                print('\033[92m[BOT][COMMAND]\033[0m clear_cart')
+                await self.bot.send_message(message.chat.id, 'Cart cleared successfully 🗑️')
 
     async def start_polling(self):
         print('\033[92m[BOT]\033[0m Bot started')
