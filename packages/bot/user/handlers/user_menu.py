@@ -3,7 +3,7 @@ from packages.bot.user.states.menu import MenuState
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.types.chat import ChatActions
 from packages.services.prisma_service import PrismaService
-from resources.images.get_path import getPathToPhotoFolder
+from resources.media.get_path import getPathToMediaFolder
 from aiogram import types
 
 index = 0
@@ -47,30 +47,45 @@ async def products_in_catalog(bot, query, state):
         return
     
     await state.update_data(products=products)
-    photo = getPathToPhotoFolder() + products[0].photos[0]
-    prev_message = None
-    with open(photo, 'rb') as photo_file:
-        prev_message = await bot.send_photo(query.message.chat.id, photo_file, caption="test", reply_markup=keyboard_for_product(0, len(products)))
     
-    await show_product(bot, query.message, products[0], 0, len(products), prev_message.message_id)
+    await show_product(bot, query.message, products[0], len(products))
     
 
-async def show_product(bot, message, product, current_index, total_products, prev_message_id=None):
-    await bot.send_chat_action(message.chat.id, ChatActions.TYPING)
-    # вивести інформацію про товар(назва, ціна, опис,знижка якщо є, кольори, розміри,кількості і т.д.)
+async def show_product(bot, message, product, total_products, current_index=0, prev_message_id=None):
+    caption = format_caption(product)
     
-    text = f"<b>{product.name}</b>\n\n"
-    text += f"Опис: {product.description}\n\n"
+    path_to_media = getPathToMediaFolder() + product.photos[0]
+    
+    if prev_message_id is None:
+        await send_media_message(
+            bot=bot,
+            message=message,
+            path_to_media=path_to_media,
+            caption=caption,
+            reply_markup=keyboard_for_product(current_index, total_products)
+        )
+    else:
+        await edit_media_message(
+            bot=bot,
+            message=message,
+            prev_message=prev_message_id,
+            path_to_media=path_to_media,
+            caption=caption,
+            reply_markup=keyboard_for_product(current_index, total_products)
+        )
+
+    await MenuState.products.set()
+
+def format_caption(product):
+    caption = f"<b>{product.name}</b>\n\n"
+    caption += f"Опис: {product.description}\n\n"
     if product.discount != 0:
-        # виведи закреслену ціну і ціну зі знижкою
-        text += f"Ціна: <s>{product.price}</s> \t{product.price - product.discount} грн.\n\n"
+        caption += f"Ціна: {product.price - product.discount} \t <s>{product.price}</s>\n\n"
     else: 
-        text += f"Ціна: {product.price} грн.\n\n"
+        caption += f"Ціна: {product.price} грн.\n\n"
    
     colors_and_sizes = {}
 
-    # Отримання кольорів та розмірів товару
-    
     for variant in product.variants:
         color = variant.color
         
@@ -80,26 +95,61 @@ async def show_product(bot, message, product, current_index, total_products, pre
         for size in variant.sizes:
             colors_and_sizes[color].append(size.name)
 
-    text += "<b>Кольори та розміри товару:</b>\n\n"
+    caption += "<b>Кольори та розміри товару:</b>\n\n"
     for color, sizes in colors_and_sizes.items():
         sizes_str = ", ".join(sizes)
-        text += f"{color}({sizes_str})\n"
-
-  
-    photo = product.photos[0]
+        caption += f"{color}({sizes_str})\n"
     
-    with open(getPathToPhotoFolder() + photo, 'rb') as photo_file:
-        try:
-            await bot.edit_message_media(
-                chat_id=message.chat.id,
-                message_id=prev_message_id,
-                media=types.InputMediaPhoto(media=photo_file, caption=text, parse_mode="HTML"),
-                reply_markup=keyboard_for_product(current_index, total_products)
-            )
-        except Exception as e:
-            print(e)
+    return caption
 
-    await MenuState.products.set()
+def get_media_group_obj(array_of_path, caption):
+    media_group = []
+    
+    for i,path in enumerate(array_of_path):
+        media = get_media_obj(
+            path_to_media=path,
+            caption=caption if i == 0 else ''
+        )
+        media_group.append(media)
+
+    return media_group
+                     
+unclosed_media_group = []
+      
+def get_media_obj(path_to_media, caption):
+    global unclosed_media_group
+    
+    file = open(path_to_media, 'rb')
+
+    unclosed_media_group.append(file)
+    
+    if path_to_media.endswith('jpg') or path_to_media.endswith('png'):
+        media_file = types.InputMediaPhoto(file, caption=caption, parse_mode='HTML')
+    elif path_to_media.endswith('mp4'):
+        media_file = types.InputMediaVideo(file, caption=caption, parse_mode='HTML')
+    
+    return media_file
+
+async def send_media_message(bot, message, path_to_media, caption, reply_markup):
+    # media = get_media_obj(path_to_media, caption)
+    with open(path_to_media, 'rb') as media_file:
+        media_bytes = media_file.read()
+        
+    if isinstance(media_bytes, types.InputMediaPhoto):
+        await bot.send_chat_action(message.chat.id, ChatActions.UPLOAD_PHOTO)
+        await bot.send_photo(message.chat.id, media_bytes, caption=caption, reply_markup=reply_markup, parse_mode='HTML')
+    elif isinstance(media_bytes, types.InputMediaVideo):
+        await bot.send_chat_action(message.chat.id, ChatActions.UPLOAD_VIDEO)
+        await bot.send_video(message.chat.id, media_bytes, caption=caption, reply_markup=reply_markup, parse_mode='HTML')
+
+
+async def edit_media_message(bot, message,prev_message, path_to_medias, caption, reply_markup):
+    media = get_media_obj(path_to_medias, caption)
+    
+    await bot.edit_message_media(message.chat.id, prev_message, media, reply_markup=reply_markup, parse_mode='HTML')
+    
+    for file in unclosed_media_group:
+        file.close()
 
 
 def keyboard_for_product(current_index, total_products):
@@ -175,7 +225,7 @@ async def show_item(bot,message,item,prev_message_id=None):
     
     markup.row(minus_button, count_button, plus_button)
     
-    with open(getPathToPhotoFolder() + "1.jpg", 'rb') as photo:
+    with open(getPathToMediaFolder() + "1.jpg", 'rb') as photo:
         await bot.send_photo(message.chat.id,photo, caption=text, reply_markup=markup, parse_mode='HTML')
     
 async def handler_btn_cart(bot,query,state):

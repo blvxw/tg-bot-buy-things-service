@@ -125,12 +125,15 @@ class BotApp(metaclass=Singleton):
         @self.dp.message_handler(state=AdminState.add_quantities)
         async def _handle_add_quantities(message: types.Message, state: FSMContext):
             await handle_add_quantities(self.bot, message, state)
+            
 
-        @self.dp.message_handler(state=AdminState.add_photos, content_types=[types.ContentType.PHOTO,types.ContentType.TEXT])
+        @self.dp.message_handler(state=AdminState.add_photos, content_types=[types.ContentType.PHOTO,types.ContentType.TEXT,types.ContentType.VIDEO])
         async def _handle_add_photos(message: types.Message, state: FSMContext):
-            if message.content_type == types.ContentType.PHOTO:
+            if message.content_type == types.ContentType.VIDEO:
+                await handle_add_videos(self.bot, message, state)
+            elif message.content_type == types.ContentType.PHOTO:
                 await handle_add_photos(self.bot, message, state)
-            if message.content_type == types.ContentType.TEXT:
+            elif message.content_type == types.ContentType.TEXT:
                 if message.text == '/done':
                     await handle_add_done(self.bot, message, state)
 

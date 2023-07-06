@@ -21,7 +21,7 @@ from packages.bot.admin.states.admin_state import AdminState
 from aiogram import types
 from aiogram.dispatcher import FSMContext
 
-from resources.images.get_path import getPathToPhotoFolder
+from resources.media.get_path import getPathToMediaFolder
 
 lang = 'en'
 
@@ -140,14 +140,24 @@ async def handle_add_quantities(bot,message: types.Message, state: FSMContext):
 async def handle_add_photos(bot,message, state: FSMContext):    
     photo = message.photo[-1]  # Беремо лише останню (найбільшу) фотографію
     photo_name = f"{photo.file_id}.jpg"
-    await bot.download_file_by_id(photo.file_id, getPathToPhotoFolder() + photo_name)
+    await bot.download_file_by_id(photo.file_id, getPathToMediaFolder() + photo_name)
     await bot.send_message(message.chat.id, loadTextByLanguage(lang,'photo_successfully_added'))
 
     data = await state.get_data()
     item_photos = data.get('item_photos', [])
     item_photos.append(photo_name)
     await state.update_data(item_photos=item_photos)
+
+async def handle_add_videos(bot,message, state: FSMContext): 
+    video = message.video.file_id 
+    video_name = f"{video}.mp4"
+    await bot.download_file_by_id(video, getPathToMediaFolder() + video_name)
+    await bot.send_message(message.chat.id, loadTextByLanguage(lang,'photo_successfully_added'))
     
+    data = await state.get_data()
+    item_videos = data.get('item_videos', [])
+    item_videos.append(video_name)
+    await state.update_data(item_videos=item_videos)
 
 async def handle_add_done(bot,message: types.Message, state: FSMContext):
     await bot.send_message(message.chat.id,loadTextByLanguage(lang,'ask_for_more_variations'))
@@ -203,11 +213,21 @@ async def save_product(bot,message: types.Message, state: FSMContext):
     item_discount = data.get('item_discount')
     category_id = data.get('category_id')
     item_photos = data.get('item_photos')
+    item_videos = data.get('item_videos')
     variants = data.get('variants')
 
-    await state.finish()
+    media = []
+    if item_videos is not None:
+        for i in item_videos:
+            media.append(i)
+        
+    if item_photos is not None:
+        for i in item_photos:
+            media.append(i)
+        
 
-    if not variants or not item_photos or not item_description or not item_name or not item_price or item_discount is None or not category_id:
+    await state.finish()
+    if not variants or not media or not item_description or not item_name or not item_price or item_discount is None or not category_id:
         await bot.send_message(message.chat.id, loadTextByLanguage(lang,'error_all_data_product'))
         return
 
@@ -219,7 +239,7 @@ async def save_product(bot,message: types.Message, state: FSMContext):
         discount=item_discount,
         variants=variants,
         categoryId=category_id,
-        photos=item_photos
+        photos=media
     )
 
     await PrismaService().addProduct(product)

@@ -27,6 +27,7 @@ model User {
   phone       String @unique
   telegram_id String @unique 
   email       String @unique
+  
   language    Language
   role        Role @default(USER)
   cart       Cart[]
