@@ -1,9 +1,10 @@
 node_modules
 .countignore
-./pycache
-.bat
-.txt
-.jpg
-.png
-.mp4
-.pyc
+**/__pycache__
+**/pycache
+**/*.bat
+**/*.txt
+**/*.jpg
+**/*.png
+**/*.mp4
+**/*.pyc
