@@ -5,8 +5,8 @@ from enum import Enum
 
 
 class UserRoles(Enum):
-    USER,
-    ADMIN
+    USER = 'USER'
+    ADMIN = 'ADMIN'
 
 
 bot = Bot(token=getEnvVar("BOT_TOKEN"), parse_mode=types.ParseMode.HTML)
