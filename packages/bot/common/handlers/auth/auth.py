@@ -34,6 +34,9 @@ async def getInfoHandler(bot, message, state):
 
     elif prompt == 'phone':
         await handle_phone(bot, message, state, language)
+        data = await state.get_data()
+        if data['prompt'] == 'password':
+           return 
         await create_user(bot,message,state,message.chat.id)
         await bot.send_message(message.chat.id, loadTextByLanguage(language, 'signup_success'))
     else:

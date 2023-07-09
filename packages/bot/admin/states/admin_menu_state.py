@@ -1,9 +1,10 @@
 from aiogram.dispatcher.filters.state import State, StatesGroup
 
 
-class AdminState(StatesGroup):
+class AdminMenuState(StatesGroup):
     choose_action = State()
     create_category = State()
+    isAdultCategory = State()
     choose_category = State()
     add_name = State()
     add_description = State()
@@ -12,5 +13,5 @@ class AdminState(StatesGroup):
     add_color = State()
     add_sizes = State()
     add_quantities = State()
-    add_photos = State()
+    add_media = State()
     add_variants = State()

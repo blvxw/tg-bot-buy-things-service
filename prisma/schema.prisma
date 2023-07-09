@@ -27,7 +27,7 @@ model User {
   phone       String @unique
   telegram_id String @unique 
   email       String @unique
-  
+  adultContent Boolean @default(false)
   language    Language
   role        Role @default(USER)
   cart       Cart[]
@@ -59,12 +59,12 @@ model Discount {
 }
 
 model Product {
-  id            String           @id @default(auto()) @map("_id") @db.ObjectId 
+  id            String           @id @default(auto()) @map("_id") @db.ObjectId
   name          String
   description   String
   price         Float
   discount      Float
-  photos      String[]
+  media      String[]
   categoryId    String           @db.ObjectId
   category      Category         @relation(fields: [categoryId], references: [id])
   variants      ProductVariant[]
@@ -74,6 +74,7 @@ model Product {
 model Category {
   id          String    @id @default(auto()) @map("_id") @db.ObjectId
   name        String
+  adultContent Boolean @default(false)
   products    Product[]
 }
 

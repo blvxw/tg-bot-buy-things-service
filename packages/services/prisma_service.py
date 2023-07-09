@@ -2,6 +2,7 @@ import prisma
 from packages.patterns.singleton import Singleton
 from packages.classes.product import Product
 
+
 class PrismaService(metaclass=Singleton):
     def __init__(self):
         self.prisma = prisma.Prisma()
@@ -15,15 +16,38 @@ class PrismaService(metaclass=Singleton):
 
     async def disconnect(self):
         await self.prisma.disconnect()
-    
-    async def getCategoryIds(self,name):
-        category = await self.prisma.category.find_first(where={'name': name})
         
+    async def isAdmin(self, user_telegram_id):
+        user = await self.findUserByTelegramId(user_telegram_id)
+
+        if user is None:
+            return False
+
+        return user.role == 'ADMIN'
+        
+    async def isUser(self, user_telegram_id):
+        user = await self.findUserByTelegramId(user_telegram_id)
+
+        if user is None:
+            return False
+
+        return user.role == 'USER'
+    
+    async def getCategoryIds(self, name):
+        category = await self.prisma.category.find_first(where={'name': name})
         return str(category.id)
 
-    async def getAllIdAndNamesCategories(self):
-        return await self.prisma.category.find_many(where={})
-         
+    async def getAllCategories(self, adultContent=False):
+        if adultContent:
+            return await self.prisma.category.find_many()
+        
+        categories = await self.prisma.category.find_many(
+            where={'adultContent': False}
+        )
+
+        return categories
+
+      
     async def addProduct(self, product):
         variant_data = []
         for variant in product.variants:
@@ -39,7 +63,7 @@ class PrismaService(metaclass=Singleton):
             'description': product.description,
             'price': product.price,
             'discount': product.discount,
-            'photos': product.photos,
+            'media': product.media,
             'variants': {'create': variant_data}
         }
 
@@ -48,19 +72,43 @@ class PrismaService(metaclass=Singleton):
             data={'products': {'create': [product_data]}}
         )
 
-    async def addCategory(self, name):
-        flag = await self.prisma.category.find_first(where={'name': name})
-        
+    async def checkCategoryExists(self, name):
+        category = await self.prisma.category.find_first(where={'name': name})
+
+        return category != None
+
+    async def addCategory(self, name, adultContent=False):
+
+        flag = await self.checkCategoryExists(name)
+
         if flag:
             return False
-        
+
         await self.prisma.category.create(
             data={
-                'name': name
+                'name': name,
+                'adultContent': adultContent
             }
         )
+
         return True
-    
+
+    async def setAdultTypeCategory(self, name):
+        await self.prisma.category.update(
+            where={'name': name},
+            data={
+                'adultContent': True
+            }
+        )
+
+    async def showForUserAdultContent(self, user_telegram_id):
+        user = await self.findUserByTelegramId(user_telegram_id)
+
+        if user is None:
+            return False
+
+        return user.adultContent
+
     async def addUser(self, user):
         await self.prisma.user.create(
             data={
@@ -93,32 +141,32 @@ class PrismaService(metaclass=Singleton):
                 column: value
             })
         return user != None
-    
+
     async def getLangByTelegramId(self, telegram_id):
         user = await self.findUserByTelegramId(telegram_id)
         return user.language
 
-    async def getProductFromCategoty(self,categort_id):
+    async def getProductsFromCategoty(self, categort_id):
         category = await self.prisma.category.find_first(
             where={
                 'id': str(categort_id)
             },
             include={
-                'products':{
-                    'include':{
-                        'variants':{
-                            'include':{
+                'products': {
+                    'include': {
+                        'variants': {
+                            'include': {
                                 'discounts': True,
-                                'sizes' : True 
-                            }              
+                                'sizes': True
+                            }
                         }
                     }
                 }
             }
         )
-        
+
         return category.products
-    
+
     async def add_product_to_cart(self, telegram_id, product_variant_id, quantity=1):
         user = await self.prisma.user.find_unique(where={'telegram_id': str(telegram_id)})
         if user is None:
@@ -131,7 +179,7 @@ class PrismaService(metaclass=Singleton):
         cart = await self.prisma.cart.find_first(where={'userId': user.id})
         if cart is None:
             await self.prisma.cart.create(data={"userId": user.id})
-        
+
         #!
         # size = 'M'
         # size_variant = await self.prisma.size.find_unique(
@@ -145,7 +193,7 @@ class PrismaService(metaclass=Singleton):
         #     where={"productVariantId": product_variant.id, "sizeId": size_variant.id, "cartId": user.cart}
         # )
         cart_item = None
-        
+
         if cart_item is None:
             # Додавання нового товару до корзини
             cart_item = await self.prisma.cartitem.create(
@@ -196,16 +244,16 @@ class PrismaService(metaclass=Singleton):
 
         return True
 
-    async def get_cart(self,telegram_id):
-        user = await self.prisma.user.find_unique(where={'telegram_id': str(telegram_id)},include={'cart': {'include': {'items': True}}})
+    async def get_cart(self, telegram_id):
+        user = await self.prisma.user.find_unique(where={'telegram_id': str(telegram_id)}, include={'cart': {'include': {'items': True}}})
         print(user)
         if user is None:
             return None
 
         return user.cart
 
-    async def getProduct(self,product_id):
-        
-        product = await self.prisma.product.find_unique(where={'id': str(product_id)},include={'variants': {'include': {'discounts': True,'sizes': True}}})
-        
+    async def getProduct(self, product_id):
+
+        product = await self.prisma.product.find_unique(where={'id': str(product_id)}, include={'variants': {'include': {'discounts': True, 'sizes': True}}})
+
         return product
