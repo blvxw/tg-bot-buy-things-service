@@ -4,7 +4,7 @@ from packages.utils.language import loadTextByLanguage
 
 from packages.bot.common.handlers.auth.auth import auth
 
-async def chooseLanguage(bot, message, state):
+async def chooseLanguage(bot, message):
     await bot.send_message(message.chat.id, "Choose language", reply_markup=chooseLangKeyboard())
     await GetInfo.chooseLanguageState.set()
 

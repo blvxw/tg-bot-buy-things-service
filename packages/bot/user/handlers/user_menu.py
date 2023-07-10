@@ -1,10 +1,9 @@
-from packages.bot.user.states.user_menu_state import UserMenuState
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-from aiogram.types.chat import ChatActions
-from packages.services.prisma_service import PrismaService
 from resources.media.get_path import getPathToMediaFolder
 from aiogram import types
-from enum import Enum
+
+# > data manipulation
+from packages.services.prisma_service import PrismaService
+from packages.services.firebase_storage import FirebaseStorage
 
 # > load text by language
 from packages.utils.language import loadTextByLanguage
@@ -12,39 +11,44 @@ from packages.utils.language import loadTextByLanguage
 # > keyboards
 from packages.bot.user.keyboards.keyboards import *
 from packages.bot.common.keyboards.keyboards import *
-
-
-from packages.bot.loader import dp,bot
+ 
+# >
+from packages.classes.file_type import FileType
 
 from packages.utils.check_query_data import isQueryDataValid
 
-index_product = 0
-index_media = 0
+from packages.bot.loader import dp, bot
+
+
+
+page = 0
 lang = None
 
 
 async def user_menu(message, language):
     global lang
-    lang = language
-    
+    if lang != language:
+        lang = language
+
     await bot.send_message(message.chat.id, 'Панель керування', reply_markup=menuKeyboard('ua'))
 
 
 @dp.callback_query_handler(lambda query: isQueryDataValid(query, 'user_menu'))
 async def menuHandler(query: types.CallbackQuery, state):
     action = query.data.split(':')[1]
-    
+
     if action == 'catalogs':
         await catalogs(bot, query.message)
     elif action == 'cart':
-        await show_cart(bot, query, state)
+        pass
+        # await show_cart(bot, query, state)
     elif action == 'orders':
         pass
     elif action == 'settings':
         pass
 
+
 async def catalogs(bot, message):
-    print('catalogs')
     user_telegram_id = message.from_user.id
 
     showAdultContent = await PrismaService().showForUserAdultContent(user_telegram_id)
@@ -55,51 +59,66 @@ async def catalogs(bot, message):
         await user_menu(bot, message, None, lang)
         return
 
-    await bot.send_message(message.chat.id, 'Каталоги', reply_markup=generateCatalogsKeyboard(categories,'show_products_in_catalog'))
+    await bot.send_message(message.chat.id, 'Каталоги', reply_markup=generateCatalogsKeyboard(categories, 'show_products_in_catalog'))
+
 
 @dp.callback_query_handler(lambda query: isQueryDataValid(query, 'show_products_in_catalog'))
 async def products_in_catalog(query: types.CallbackQuery, state):
-    
+
     products = await PrismaService().getProductsFromCategoty(categort_id=query.data.split(':')[1])
 
-    if products == []:
+    if len(products) == 0:
+        # > translate text
         await bot.send_message(query.message.chat.id, "Товарів немає")
         await catalogs(bot, query.message)
         return
 
     await state.update_data(products=products)
 
-    await show_product(bot, query.message, products[0], len(products))
+    await show_page_of_products(query.message, products)
 
+array_of_msg = []
+num_of_products_on_page = 5
 
+async def show_page_of_products(message, products, page=0):
+    global array_of_msg
+    num_of_products = len(products)
 
-async def show_product(bot, message, product,total_products, prev_message_id=None):
-    caption = format_caption(product)
+    num_of_pages = num_of_products // num_of_products_on_page
 
-    path_to_media = getPathToMediaFolder() + product.media[index_media]
-    total_media = len(product.media)
-    
-    
-    if prev_message_id is None:
-        await send_media_message(
-            bot=bot,
-            message=message,
-            path_to_media=product.media,
-            caption=caption,
-            reply_markup=keyboard_for_product(index_product, total_products,index_media, total_media,"show_product_from_catalog")
-        )
-    else:
-        await edit_media_message(
-            bot=bot,
-            message=message,
-            prev_message_id=prev_message_id,
-            path_to_media=product.media,
-            caption=caption,
-            reply_markup=keyboard_for_product(index_product, total_products)
-        )
+    if int(num_of_pages) != num_of_pages:
+        num_of_pages += 1
 
-    await UserMenuState.products.set()
+    print(num_of_pages)
 
+    for i in range(num_of_products_on_page):
+        index = i + page * num_of_products_on_page
+        if index >= num_of_products:
+            break
+        used_files = []
+        product = products[index]
+        caption = format_caption(product)
+        media_group = []
+
+        for i, media_name in enumerate(product.media):
+            FirebaseStorage().download_file(media_name,products[index].id)
+            file = open(getPathToMediaFolder() + media_name, 'rb')
+            used_files.append(file)
+            if FileType.get_file_type(media_name) == FileType.PHOTO:
+                media_group.append(types.InputMediaPhoto(file, caption=caption if i == 0 else '', parse_mode='HTML'))
+            elif FileType.get_file_type(media_name) == FileType.VIDEO:
+                media_group.append(types.InputMediaVideo(file, caption=caption if i == 0 else '', parse_mode='HTML'))
+
+        cur_message = await bot.send_media_group(message.chat.id, media_group)
+        if num_of_pages > 1:
+            await bot.send_message(message.chat.id, "Оберіть сторінку", reply_markup=generate_pages_btns(num_of_pages, page, 'btns_pages_products_in_catalog'))
+        array_of_msg.append(cur_message)
+        import os
+        
+        for file in used_files:
+            file.close()
+            os.remove(file.name)    
+        
 
 def format_caption(product):
     caption = f"<b>{product.name}</b>\n\n"
@@ -128,124 +147,47 @@ def format_caption(product):
     return caption
 
 
-class MediaTypes(Enum):
-    PHOTO = 'PHOTO'
-    VIDEO = 'VIDEO'
+async def switch_product(message, products):
+    pass
 
-def isPhoto(path_to_media):
-    if path_to_media.endswith('jpg') or path_to_media.endswith('png'):
-        return MediaTypes.PHOTO.value
-    elif path_to_media.endswith('mp4'):
-        return MediaTypes.VIDEO.value
-    
-    return None
+# async def show_cart(bot, query, state):
+#     await bot.send_chat_action(query.message.chat.id, ChatActions.TYPING)
+#     prisma_service = PrismaService()
+#     cart = await prisma_service.get_cart(query.message.chat.id)
 
-async def send_media_message(bot, message, path_to_media, caption, reply_markup):
-    
-    with open(path_to_media, 'rb') as file:
-        pass
-        # if path_to_media.endswith('jpg') or path_to_media.endswith('png'):
-        #     await bot.send_chat_action(message.chat.id, ChatActions.UPLOAD_PHOTO)
-        #     await bot.send_photo(message.chat.id, photo=file, caption=caption, reply_markup=reply_markup, parse_mode='HTML')
-        # elif path_to_media.endswith('mp4'):
-        #     await bot.send_chat_action(message.chat.id, ChatActions.UPLOAD_VIDEO)
-        #     await bot.send_video(message.chat.id, media=file, caption=caption, reply_markup=reply_markup, parse_mode='HTML')
+#     if cart == None or cart == []:
+#         await bot.send_message(query.message.chat.id, "Кошик пустий")
+#         return
+
+#     await show_item(bot, query.message, cart[0].items[0])
 
 
-async def edit_media_message(bot, message, prev_message_id, array_of_paths, caption, reply_markup):
-   pass
+# async def show_item(bot, message, item, prev_message_id=None):
+#     await bot.send_chat_action(message.chat.id, ChatActions.TYPING)
+#     product = await PrismaService().getProduct(item.productId)
 
-    # with open(path_to_media, 'rb') as file:
-    #     media = types.InputMediaPhoto(media=file) if is_photo else types.InputMediaVideo(media=file)
-    #     media.caption = caption
-    #     media.parse_mode = "HTML"
-        
-    #     await bot.edit_message_media(
-    #         chat_id=message.chat.id,
-    #         message_id=prev_message_id,
-    #         media=media,
-    #         reply_markup=reply_markup
-    #     )
+#     text = f'<b>Назва - {product.name}</b>\n\n'
+#     text += f'<b>Ціна - {product.price}</b>\n\n'
 
+#     markup = InlineKeyboardMarkup()
 
-async def handler_btn_product(bot, query, state):
-    global index_product, index_media
-    
-    operation = query.data
-    products = (await state.get_data('products'))['products']
-        
-    if operation == 'add_to_cart':
-        # await PrismaService().add_product_to_cart(query.message.chat.id, products[index].variants[0].id)
-        await bot.answer_callback_query(query.id, text="Товар додано до кошика")
+#     minus_button = InlineKeyboardButton('-', callback_data=f'minus:{product.id}')
+#     count_button = InlineKeyboardButton(f'{product.variants[0].sizes[0].quantity}', callback_data=f'count:{product.id}')
+#     plus_button = InlineKeyboardButton('+', callback_data=f'plus:{product.id}')
 
-    elif operation == 'previous_product':
-        index_product -= 1
-    elif operation == 'next_product':
-        index_product += 1
-    elif operation == 'previous_media':
-        index_media -= 1
-    elif operation == 'next_media':
-        index_media += 1
-    
-    await switch_product(bot, query.message, products)        
-        
+#     markup.row(minus_button, count_button, plus_button)
 
-async def switch_product(bot, message, products):
-    global index_product
-
-    if index_product < 0:
-        index_product = len(products) - 1
-    elif index_product >= len(products):
-        index_product = 0
-        
-    if index_media < 0:
-        index_media = len(products[index_product].media) - 1
-    elif index_media >= len(products[index_product].media):
-        index_media = 0
-        
-    product = products[index_product]
-
-    await show_product(bot, message, product,len(products),prev_message_id=message.message_id)
+#     with open(getPathToMediaFolder() + "1.jpg", 'rb') as photo:
+#         await bot.send_photo(message.chat.id, photo, caption=text, reply_markup=markup, parse_mode='HTML')
 
 
-async def show_cart(bot, query, state):
-    await bot.send_chat_action(query.message.chat.id, ChatActions.TYPING)
-    prisma_service = PrismaService()
-    cart = await prisma_service.get_cart(query.message.chat.id)
+# async def handler_btn_cart(bot, query, state):
+#     operation, item_id = query.data.split(':')
+#     prisma_service = PrismaService()
+#     if operation == 'minus':
+#         await prisma_service.update_cart_item_quantity(item_id, -1)
+#     elif operation == 'plus':
+#         await prisma_service.update_cart_item_quantity(item_id, 1)
 
-    if cart == None or cart == []:
-        await bot.send_message(query.message.chat.id, "Кошик пустий")
-        return
-
-    await show_item(bot, query.message, cart[0].items[0])
-
-
-async def show_item(bot, message, item, prev_message_id=None):
-    await bot.send_chat_action(message.chat.id, ChatActions.TYPING)
-    product = await PrismaService().getProduct(item.productId)
-
-    text = f'<b>Назва - {product.name}</b>\n\n'
-    text += f'<b>Ціна - {product.price}</b>\n\n'
-
-    markup = InlineKeyboardMarkup()
-
-    minus_button = InlineKeyboardButton('-', callback_data=f'minus:{product.id}')
-    count_button = InlineKeyboardButton(f'{product.variants[0].sizes[0].quantity}', callback_data=f'count:{product.id}')
-    plus_button = InlineKeyboardButton('+', callback_data=f'plus:{product.id}')
-
-    markup.row(minus_button, count_button, plus_button)
-
-    with open(getPathToMediaFolder() + "1.jpg", 'rb') as photo:
-        await bot.send_photo(message.chat.id, photo, caption=text, reply_markup=markup, parse_mode='HTML')
-
-
-async def handler_btn_cart(bot, query, state):
-    operation, item_id = query.data.split(':')
-    prisma_service = PrismaService()
-    if operation == 'minus':
-        await prisma_service.update_cart_item_quantity(item_id, -1)
-    elif operation == 'plus':
-        await prisma_service.update_cart_item_quantity(item_id, 1)
-
-    item = await prisma_service.get_cart_item(item_id)
-    await show_item(bot, query.message, item, prev_message_id=query.message.message_id)
+#     item = await prisma_service.get_cart_item(item_id)
+#     await show_item(bot, query.message, item, prev_message_id=query.message.message_id)

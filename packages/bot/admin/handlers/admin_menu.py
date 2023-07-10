@@ -1,6 +1,10 @@
 
-# > db
+# > system imports
+import os
+
+# > data management
 from packages.services.prisma_service import PrismaService
+from packages.services.firebase_storage import FirebaseStorage
 
 # > classes
 from packages.classes.product import Product
@@ -36,7 +40,7 @@ lang = None
 
 async def admin_menu(message, language):
     global lang
-    if lang == None:
+    if lang != language:
         lang = language
 
     await bot.send_message(message.chat.id, loadTextByLanguage(lang, 'admin_panel'), reply_markup=adminMenuKeyboard(lang))
@@ -308,6 +312,7 @@ async def get_product_instance(state: FSMContext):
     await state.finish()
     return product
 
+    
 
 async def save_product(message: types.Message, state: FSMContext):
     product = await get_product_instance(state)
@@ -317,6 +322,18 @@ async def save_product(message: types.Message, state: FSMContext):
         await admin_menu(bot, message)
         return
 
+    
     await PrismaService().addProduct(product)
+    
+    product = await PrismaService().findPrudctByName(product.name)
+    
+    save_media(product.media,product.id)
+    
     await bot.send_message(message.chat.id, loadTextByLanguage(lang, 'product_added_to_db'))
-    await admin_menu(bot, message)
+    await admin_menu(message,lang)
+    
+
+def save_media(names_of_files,product_id):
+    for name in names_of_files:
+        FirebaseStorage().upload_file(name,product_id)
+        os.remove(getPathToMediaFolder() + name)

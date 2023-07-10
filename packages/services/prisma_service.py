@@ -8,15 +8,9 @@ class PrismaService(metaclass=Singleton):
         self.prisma = prisma.Prisma()
 
     async def initialize(self):
-        await self.connect()
+        await self.prisma.connect()
         print('\033[92m[DB]\033[0m Connected to database')
 
-    async def connect(self):
-        await self.prisma.connect()
-
-    async def disconnect(self):
-        await self.prisma.disconnect()
-        
     async def isAdmin(self, user_telegram_id):
         user = await self.findUserByTelegramId(user_telegram_id)
 
@@ -71,6 +65,13 @@ class PrismaService(metaclass=Singleton):
             where={'id': product.categoryId},
             data={'products': {'create': [product_data]}}
         )
+        
+        
+        
+    async def findPrudctByName(self,name):
+        product = await self.prisma.product.find_first(where={'name': name})
+        return product
+            
 
     async def checkCategoryExists(self, name):
         category = await self.prisma.category.find_first(where={'name': name})
@@ -122,11 +123,14 @@ class PrismaService(metaclass=Singleton):
         )
 
     async def findUserByTelegramId(self, telegram_id):
+        print('1')
         user = await self.prisma.user.find_unique(
             where={
                 'telegram_id': str(telegram_id)
             })
+        print('2')
         return user
+
 
     async def isUserLoggedIn(self, telegram_id):
         user = await self.findUserByTelegramId(telegram_id)

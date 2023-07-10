@@ -1,9 +1,12 @@
 
-# > patterns
+# > pattern
 from packages.patterns.singleton import Singleton
-from aiogram import executor
 
+#> bot stuff
+from aiogram import executor
 from packages.bot.loader import *
+
+#> handlers
 from packages.bot.common.handlers.start import *
 
 class BotApp(metaclass=Singleton):
@@ -11,7 +14,7 @@ class BotApp(metaclass=Singleton):
         self.bot = bot
         self.storage = storage
         self.dp = dp
-        
-    def start_polling(self):
-        executor.start_polling(self.dp, skip_updates=True)
 
+    def start_polling(self):
+        print('\033[92m[BOT]\033[0m Bot started')
+        executor.start_polling(self.dp, skip_updates=True)

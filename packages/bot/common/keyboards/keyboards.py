@@ -81,3 +81,26 @@ def keyboard_for_product(index_product, total_products,index_media,total_media,c
     keyboard.row(add_to_cart_button)
 
     return keyboard
+
+def generate_pages_btns(num_of_pages,cur_page,callback_data):
+    if num_of_pages <= 1:
+        return None
+    keyboard = InlineKeyboardMarkup(row_width=5)
+    max_pages = 5
+
+    start = cur_page - 2
+    if cur_page <= 0:
+        start = 1
+        
+    end = start + num_of_pages
+    if end > max_pages:
+        end = max_pages
+    
+    for i in range(start,end,1):
+        if i == cur_page:
+            keyboard.insert(InlineKeyboardButton(f">{i}<", callback_data=f"{callback_data}:{i}"))
+        else:
+            keyboard.insert(InlineKeyboardButton(f"{i}", callback_data=f"{callback_data}:{i}"))
+        
+    return keyboard
+    

@@ -8,7 +8,7 @@ class UserRoles(Enum):
     USER = 'USER'
     ADMIN = 'ADMIN'
 
-
-bot = Bot(token=getEnvVar("BOT_TOKEN"), parse_mode=types.ParseMode.HTML)
+#!
+bot = Bot(token=getEnvVar("BOT_TOKEN_PROD"), parse_mode=types.ParseMode.HTML)
 storage = MemoryStorage()
 dp = Dispatcher(bot, storage=storage)
