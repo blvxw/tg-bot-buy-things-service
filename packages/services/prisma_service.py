@@ -11,6 +11,8 @@ class PrismaService(metaclass=Singleton):
         await self.prisma.connect()
         print('\033[92m[DB]\033[0m Connected to database')
 
+    async def disconnect(self):
+        await self.prisma.disconnect()
     async def isAdmin(self, user_telegram_id):
         user = await self.findUserByTelegramId(user_telegram_id)
 
@@ -26,13 +28,18 @@ class PrismaService(metaclass=Singleton):
             return False
 
         return user.role == 'USER'
-    
+    async def updateUserLanguage(self, user_telegram_id, language):
+        await self.prisma.user.update(
+            where={'telegram_id': str(user_telegram_id)},
+            data={'language': language}
+        )
+
     async def getCategoryIds(self, name):
         category = await self.prisma.category.find_first(where={'name': name})
         return str(category.id)
 
-    async def getAllCategories(self, adultContent=False):
-        if adultContent:
+    async def getAllCategories(self, adult_content: bool = False):
+        if adult_content:
             return await self.prisma.category.find_many()
         
         categories = await self.prisma.category.find_many(
@@ -66,7 +73,11 @@ class PrismaService(metaclass=Singleton):
             data={'products': {'create': [product_data]}}
         )
         
-        
+    async def setShowAdultContent(self, user_telegram_id, value: bool):
+        await self.prisma.user.update(
+            where={'telegram_id': str(user_telegram_id)},
+            data={'adultContent': value}
+        )
         
     async def findPrudctByName(self,name):
         product = await self.prisma.product.find_first(where={'name': name})
@@ -168,96 +179,43 @@ class PrismaService(metaclass=Singleton):
                 }
             }
         )
-
         return category.products
-
-    async def add_product_to_cart(self, telegram_id, product_variant_id, quantity=1):
-        user = await self.prisma.user.find_unique(where={'telegram_id': str(telegram_id)})
-        if user is None:
-            return
-
-        product_variant = await self.prisma.productvariant.find_unique(where={"id": product_variant_id})
-        if product_variant is None:
-            return
-
-        cart = await self.prisma.cart.find_first(where={'userId': user.id})
-        if cart is None:
-            await self.prisma.cart.create(data={"userId": user.id})
-
-        #!
-        # size = 'M'
-        # size_variant = await self.prisma.size.find_unique(
-        #     where={"name": size, "variantId": product_variant.id}
-        # )
-
-        # if size_variant is None:
-        #     return
-
-        # cart_item = await self.prisma.cartItem.find_first(
-        #     where={"productVariantId": product_variant.id, "sizeId": size_variant.id, "cartId": user.cart}
-        # )
-        cart_item = None
-
-        if cart_item is None:
-            # Додавання нового товару до корзини
-            cart_item = await self.prisma.cartitem.create(
-                data={
-                    "productId": product_variant.productId,
-                    "productVariantId": product_variant.id,
-                    # "sizeId": size_variant.id,
-                    "quantity": quantity,
-                    "cartId": cart.id,
-                }
-            )
-        else:
-            # Оновлення кількості товару в корзині
-            await self.update_cart_item_quantity(cart_item.id, quantity)
-
-        # Повернення оновленої корзини
-        cart = await self.prisma.cart.find_unique(where={"id": cart.id}, include={"items": True})
-        return cart
-
-    async def update_cart_item_quantity(self, cart_item_id, quantity):
-        cart_item = await self.prisma.cartItem.find_unique(where={"id": cart_item_id})
-        if cart_item is None:
-            return
-
-        updated_quantity = cart_item.quantity + quantity
-        if updated_quantity <= 0:
-            # Видалення товару з корзини, якщо кількість стає менше або рівно нулю
-            await self.prisma.cartItem.delete(where={"id": cart_item_id})
-        else:
-            # Оновлення кількості товару в корзині
-            await self.prisma.cartItem.update(
-                where={"id": cart_item_id}, data={"quantity": updated_quantity}
-            )
-
-    async def remove_product_from_cart(self, cart_item_id):
-        await self.prisma.cartItem.delete(where={"id": cart_item_id})
-
-    async def check_product_availability(self, product_variant_id, size):
-        size_variant = await self.prisma.size.find_unique(
-            where={"name": size, "variantId": product_variant_id}
-        )
-
-        if size_variant is None:
-            return False
-
-        if size_variant.quantity <= 0:
-            return False
-
-        return True
-
-    async def get_cart(self, telegram_id):
-        user = await self.prisma.user.find_unique(where={'telegram_id': str(telegram_id)}, include={'cart': {'include': {'items': True}}})
-        print(user)
-        if user is None:
-            return None
-
-        return user.cart
 
     async def getProduct(self, product_id):
 
         product = await self.prisma.product.find_unique(where={'id': str(product_id)}, include={'variants': {'include': {'discounts': True, 'sizes': True}}})
 
         return product
+
+    
+    async def clear_database(self):
+        await self.prisma.cartitem.delete_many()
+        await self.prisma.cart.delete_many()
+        await self.prisma.discount.delete_many()
+        await self.prisma.size.delete_many()
+        await self.prisma.productvariant.delete_many()
+        await self.prisma.product.delete_many()
+        await self.prisma.category.delete_many()
+        await self.prisma.user.delete_many()
+
+    async def clear_users(self):
+        await self.clear_cart_items()
+        await self.prisma.cart.delete_many()
+        await self.prisma.user.delete_many()
+        
+    async def clear_categories(self):
+        await self.clear_products()
+        await self.prisma.category.delete_many()
+        
+    async def clear_products(self):
+        await self.clear_products_variants()
+        await self.prisma.product.delete_many()
+        
+    async def clear_products_variants(self):    
+        await self.prisma.size.delete_many()
+        await self.prisma.discount.delete_many()
+        await self.prisma.productvariant.delete_many()
+        
+    async def clear_cart_items(self):
+        await self.prisma.cartitem.delete_many()
+

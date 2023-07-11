@@ -12,9 +12,6 @@ from packages.classes.product_variant import ProductVariant
 from packages.classes.size import Size
 from packages.classes.discount import Discount
 
-# > loader text
-from packages.utils.language import *
-
 # > keyboards
 from packages.bot.admin.keyboards.keyboards import adminMenuKeyboard
 from packages.bot.common.keyboards.keyboards import *
@@ -30,21 +27,18 @@ from packages.bot.loader import dp, bot
 # > path
 from resources.media.get_path import getPathToMediaFolder
 
-# > filters
+# >>> utils
+from packages.utils.user_utils import *
 from packages.utils.check_query_data import isQueryDataValid
+from packages.utils.language import loadTextByLanguage
 
+language = None
 
-# ? user language
-lang = None
-
-
-async def admin_menu(message, language):
-    global lang
-    if lang != language:
-        lang = language
-
-    await bot.send_message(message.chat.id, loadTextByLanguage(lang, 'admin_panel'), reply_markup=adminMenuKeyboard(lang))
-
+async def admin_menu(message):
+    global language
+    language = await get_user_language(message.chat.id)
+    
+    await bot.send_message(message.chat.id, loadTextByLanguage(language, 'admin_panel'), reply_markup=adminMenuKeyboard(language))
 
 @dp.callback_query_handler(lambda query: isQueryDataValid(query, 'admin_menu'))
 async def handle_choose_action(query: types.CallbackQuery, state: FSMContext):
@@ -53,7 +47,7 @@ async def handle_choose_action(query: types.CallbackQuery, state: FSMContext):
     action = query.data.split(':')[1]
 
     if action == 'add_category':
-        await bot.send_message(query.from_user.id, loadTextByLanguage(lang, 'enter_name_category'))
+        await bot.send_message(query.from_user.id, loadTextByLanguage(language, 'enter_name_category'))
         await AdminMenuState.create_category.set()
     elif action == 'add_product':
         await send_categories(query, state)
@@ -64,12 +58,12 @@ async def process_get_name_category(message, state: FSMContext):
     categoryExsist = await PrismaService().checkCategoryExists(name=message.text)
 
     if categoryExsist:
-        await bot.send_message(message.chat.id, loadTextByLanguage(lang, 'category_alredy_added'))
-        await admin_menu(message, lang)
+        await bot.send_message(message.chat.id, loadTextByLanguage(language, 'category_alredy_added'))
+        await admin_menu(message, language)
         return
 
     await state.update_data(category_name=message.text)
-    await bot.send_message(message.chat.id, loadTextByLanguage(lang, 'is_adult_category'), reply_markup=yesOrNoKeyboard(lang))
+    await bot.send_message(message.chat.id, loadTextByLanguage(language, 'is_adult_category'), reply_markup=yesOrNoKeyboard(language))
     await AdminMenuState.isAdultCategory.set()
 
 
@@ -80,10 +74,10 @@ async def process_is_adult_category(query, state: FSMContext):
     name_category = (await state.get_data())['category_name']
 
     await PrismaService().addCategory(name=name_category, adultContent=query.data == 'yes')
-    await bot.send_message(query.from_user.id, loadTextByLanguage(lang, 'successfully_added'))
+    await bot.send_message(query.from_user.id, loadTextByLanguage(language, 'successfully_added'))
 
     await state.finish()
-    await admin_menu(query.message, lang)
+    await admin_menu(query.message, language)
 
 
 async def send_categories(callback_query: types.CallbackQuery, state: FSMContext):
@@ -94,13 +88,13 @@ async def send_categories(callback_query: types.CallbackQuery, state: FSMContext
     categories = await PrismaService().getAllCategories(show_adult_content)
 
     if len(categories) == 0:
-        await bot.send_message(callback_query.from_user.id, loadTextByLanguage(lang, 'category_not_found'))
+        await bot.send_message(callback_query.from_user.id, loadTextByLanguage(language, 'category_not_found'))
         await state.finish()
         return
     
     keyboard = generateCatalogsKeyboard(categories, 'choose_category')
 
-    await bot.send_message(callback_query.from_user.id, loadTextByLanguage(lang, 'choose_category_product'), reply_markup=keyboard)
+    await bot.send_message(callback_query.from_user.id, loadTextByLanguage(language, 'choose_category_product'), reply_markup=keyboard)
 
 
 @dp.callback_query_handler(lambda query: isQueryDataValid(query, 'choose_category'))
@@ -110,8 +104,8 @@ async def process_select_category(callback_query: types.CallbackQuery, state: FS
 
     await state.update_data(category_id=category_id)
 
-    await bot.send_message(callback_query.from_user.id, loadTextByLanguage(lang, 'enter_data_about_product'))
-    await bot.send_message(callback_query.from_user.id, loadTextByLanguage(lang, 'enter_name_product'))
+    await bot.send_message(callback_query.from_user.id, loadTextByLanguage(language, 'enter_data_about_product'))
+    await bot.send_message(callback_query.from_user.id, loadTextByLanguage(language, 'enter_name_product'))
 
     await AdminMenuState.add_name.set()
 
@@ -120,7 +114,7 @@ async def process_select_category(callback_query: types.CallbackQuery, state: FS
 async def process_add_name(message: types.Message, state: FSMContext):
     item_name = message.text
     await state.update_data(item_name=item_name)
-    await bot.send_message(message.chat.id, loadTextByLanguage(lang, 'enter_description_product'))
+    await bot.send_message(message.chat.id, loadTextByLanguage(language, 'enter_description_product'))
     await AdminMenuState.add_description.set()
 
 
@@ -128,7 +122,7 @@ async def process_add_name(message: types.Message, state: FSMContext):
 async def process_add_description(message: types.Message, state: FSMContext):
     item_description = message.text
     await state.update_data(item_description=item_description)
-    await bot.send_message(message.chat.id, loadTextByLanguage(lang, 'enter_price_product'))
+    await bot.send_message(message.chat.id, loadTextByLanguage(language, 'enter_price_product'))
     await AdminMenuState.add_price.set()
 
 
@@ -137,10 +131,10 @@ async def process_add_price(message: types.Message, state: FSMContext):
     try:
         item_price = float(message.text)
         await state.update_data(item_price=item_price)
-        await bot.send_message(message.chat.id, loadTextByLanguage(lang, 'enter_discount_product'))
+        await bot.send_message(message.chat.id, loadTextByLanguage(language, 'enter_discount_product'))
         await AdminMenuState.add_discount.set()
     except ValueError:
-        await bot.send_message(message.chat.id, loadTextByLanguage(lang, 'incorrect_price'))
+        await bot.send_message(message.chat.id, loadTextByLanguage(language, 'incorrect_price'))
 
 
 @dp.message_handler(state=AdminMenuState.add_discount)
@@ -148,10 +142,10 @@ async def process_add_discount(message: types.Message, state: FSMContext):
     try:
         item_discount = float(message.text)
         await state.update_data(item_discount=item_discount)
-        await bot.send_message(message.chat.id, loadTextByLanguage(lang, 'enter_color_product'))
+        await bot.send_message(message.chat.id, loadTextByLanguage(language, 'enter_color_product'))
         await AdminMenuState.add_color.set()
     except ValueError:
-        await bot.send_message(message.chat.id, loadTextByLanguage(lang, 'incorrect_discount'))
+        await bot.send_message(message.chat.id, loadTextByLanguage(language, 'incorrect_discount'))
 
 
 @dp.message_handler(state=AdminMenuState.add_color)
@@ -159,7 +153,7 @@ async def process_add_color(message: types.Message, state: FSMContext):
     item_color = message.text.lower()
     await state.update_data(item_color=item_color)
 
-    await bot.send_message(message.chat.id, loadTextByLanguage(lang, 'enter_sizes_product'))
+    await bot.send_message(message.chat.id, loadTextByLanguage(language, 'enter_sizes_product'))
     await AdminMenuState.add_sizes.set()
 
 
@@ -169,7 +163,7 @@ async def process_add_sizes(message: types.Message, state: FSMContext):
     item_sizes = [size.strip().lower() for size in item_sizes]  # Переводимо розміри до маленьких літер
     await state.update_data(item_sizes=item_sizes)
 
-    await bot.send_message(message.chat.id, loadTextByLanguage(lang, 'enter_quantities_product'))
+    await bot.send_message(message.chat.id, loadTextByLanguage(language, 'enter_quantities_product'))
     await AdminMenuState.add_quantities.set()
 
 
@@ -183,15 +177,15 @@ async def process_add_quantities(message: types.Message, state: FSMContext):
         item_sizes = data.get('item_sizes')
 
         if len(item_sizes) != len(item_quantities):
-            await bot.send_message(message.chat.id, loadTextByLanguage(lang, 'error_quntity_sizes'))
+            await bot.send_message(message.chat.id, loadTextByLanguage(language, 'error_quntity_sizes'))
             return
 
     except ValueError:
-        await bot.send_message(message.chat.id, loadTextByLanguage(lang, 'incorrect_value_must_be_int'))
+        await bot.send_message(message.chat.id, loadTextByLanguage(language, 'incorrect_value_must_be_int'))
         return
 
     await state.update_data(item_quantities=item_quantities)
-    await bot.send_message(message.chat.id, loadTextByLanguage(lang, 'send_media_of_product'))
+    await bot.send_message(message.chat.id, loadTextByLanguage(language, 'send_media_of_product'))
     await AdminMenuState.add_media.set()
 
 
@@ -211,12 +205,12 @@ async def process_add_photos(message, state: FSMContext):
     photo_name = f'{photo_id}.jpg'
 
     await bot.download_file_by_id(photo_id, getPathToMediaFolder() + photo_name)
-    await bot.send_message(message.chat.id, loadTextByLanguage(lang, 'successfully_added'))
+    await bot.send_message(message.chat.id, loadTextByLanguage(language, 'successfully_added'))
 
     data = await state.get_data()
-    array_of_paths = data.get('array_of_paths', [])
-    array_of_paths.append(photo_name)
-    await state.update_data(array_of_paths=array_of_paths)
+    names_of_medias = data.get('names_of_medias', [])
+    names_of_medias.append(photo_name)
+    await state.update_data(names_of_medias=names_of_medias)
 
 
 async def process_add_videos(message, state: FSMContext):
@@ -224,23 +218,23 @@ async def process_add_videos(message, state: FSMContext):
     video_name = f'{video_id}.mp4'
 
     await bot.download_file_by_id(video_id, getPathToMediaFolder() + video_name)
-    await bot.send_message(message.chat.id, loadTextByLanguage(lang, 'successfully_added'))
+    await bot.send_message(message.chat.id, loadTextByLanguage(language, 'successfully_added'))
 
     data = await state.get_data()
-    array_of_paths = data.get('array_of_paths', [])
-    array_of_paths.append(video_name)
+    names_of_medias = data.get('names_of_medias', [])
+    names_of_medias.append(video_name)
 
-    await state.update_data(array_of_paths=array_of_paths)
+    await state.update_data(names_of_medias=names_of_medias)
 
 
 async def process_stop_add_media(message: types.Message, state: FSMContext):
     data = await state.get_data()
-    array_of_paths = data.get('array_of_paths', [])
-    if len(array_of_paths) == 0:
-        await bot.send_message(message.chat.id, loadTextByLanguage(lang, 'try_add_media_of_product'))
+    names_of_medias = data.get('names_of_medias', [])
+    if len(names_of_medias) == 0:
+        await bot.send_message(message.chat.id, loadTextByLanguage(language, 'try_add_media_of_product'))
         return
 
-    await bot.send_message(message.chat.id, loadTextByLanguage(lang, 'ask_for_more_variations'))
+    await bot.send_message(message.chat.id, loadTextByLanguage(language, 'ask_for_more_variations'))
     await AdminMenuState.add_variants.set()
 
 @dp.message_handler(state=AdminMenuState.add_variants)
@@ -248,11 +242,11 @@ async def process_add_variants(message: types.Message, state: FSMContext):
     await save_variant(message, state)
 
     if message.text.lower() == 'yes':
-        await bot.send_message(message.chat.id, loadTextByLanguage(lang, 'add_new_varaint_of_product'))
-        await bot.send_message(message.chat.id, loadTextByLanguage(lang, 'enter_color_product'))
+        await bot.send_message(message.chat.id, loadTextByLanguage(language, 'add_new_varaint_of_product'))
+        await bot.send_message(message.chat.id, loadTextByLanguage(language, 'enter_color_product'))
         await AdminMenuState.add_color.set()
     else:
-        await bot.send_message(message.chat.id, loadTextByLanguage(lang, 'adding_end'))
+        await bot.send_message(message.chat.id, loadTextByLanguage(language, 'adding_end'))
         await save_product(message, state)
 
 
@@ -265,7 +259,7 @@ async def save_variant(message: types.Message, state: FSMContext):
     variants = data.get('variants', [])
 
     if len(item_sizes) != len(item_quantities):
-        await bot.send_message(message.chat.id, loadTextByLanguage(lang, 'error_sizes_quantities'))
+        await bot.send_message(message.chat.id, loadTextByLanguage(language, 'error_sizes_quantities'))
         return
 
     for size, quantity in zip(item_sizes, item_quantities):
@@ -283,33 +277,25 @@ async def save_variant(message: types.Message, state: FSMContext):
     await state.update_data(variants=variants)
 
 
-async def get_product_instance(state: FSMContext):
+async def get_product_instance(state: FSMContext) -> Product:
     data = await state.get_data()
 
-    dict = {
-        'item_name': data.get('item_name'),
-        'item_description': data.get('item_description'),
-        'item_price': data.get('item_price'),
-        'item_discount': data.get('item_discount'),
-        'category_id': data.get('category_id'),
-        'array_of_paths': data.get('array_of_paths'),
-        'variants': data.get('variants')
-    }
-
-    if None in dict.values():
-        return None
-
     product = Product(
-        name=dict['item_name'],
-        description=dict['item_description'],
-        price=dict['item_price'],
-        discount=dict['item_discount'],
-        variants=dict['variants'],
-        categoryId=dict['category_id'],
-        media=dict['array_of_paths']
+        name= data.get('item_name'),
+        description=data.get('item_description'),
+        price=data.get('item_price'),
+        discount=data.get('item_discount'),
+        variants=data.get('variants'),
+        category_id=data.get('category_id'),
     )
-
+        
+    names_of_medias = data.get('names_of_medias', [])    
+    folder_name = product.categoryId + '_' + product.name    
+    
+    product.media = save_media_get_links(names_of_medias,folder_name)
+    
     await state.finish()
+    
     return product
 
     
@@ -317,23 +303,23 @@ async def get_product_instance(state: FSMContext):
 async def save_product(message: types.Message, state: FSMContext):
     product = await get_product_instance(state)
 
-    if (product == None):
-        await bot.send_message(message.chat.id, loadTextByLanguage(lang, 'error_all_data_product'))
-        await admin_menu(bot, message)
+    if product is None:
+        await bot.send_message(message.chat.id, loadTextByLanguage(language, 'error_all_data_product'))
+        await admin_menu(message)
         return
 
-    
     await PrismaService().addProduct(product)
     
-    product = await PrismaService().findPrudctByName(product.name)
+    product = await PrismaService().findPrudctByName(product.name)    
     
-    save_media(product.media,product.id)
-    
-    await bot.send_message(message.chat.id, loadTextByLanguage(lang, 'product_added_to_db'))
-    await admin_menu(message,lang)
+    await bot.send_message(message.chat.id, loadTextByLanguage(language, 'product_added_to_db'))
+    await admin_menu(message)
     
 
-def save_media(names_of_files,product_id):
-    for name in names_of_files:
-        FirebaseStorage().upload_file(name,product_id)
-        os.remove(getPathToMediaFolder() + name)
+def save_media_get_links(names_of_files,folder_name) -> list:
+    array_of_links = []
+    for file_name in names_of_files:
+        FirebaseStorage().upload_file(file_name,folder_name)
+        array_of_links.append(FirebaseStorage().get_link_to_file(file_name,folder_name))
+        os.remove(getPathToMediaFolder() + file_name)
+    return array_of_links

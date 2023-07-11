@@ -1,5 +1,3 @@
-
-
 class User():
     def __init__(self):
         self.telegram_id = None
@@ -21,3 +19,4 @@ class User():
 
     def allFieldsFilled(self):
         return self.telegram_id and self.name and self.surname and self.phone and self.email and self.language
+    

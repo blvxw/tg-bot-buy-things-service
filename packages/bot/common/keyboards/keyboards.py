@@ -1,18 +1,25 @@
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, KeyboardButton
 from packages.utils.language import loadTextByLanguage
 
-def chooseLangKeyboard():
-    keyboard = InlineKeyboardMarkup()
+def chooseLangKeyboard(current_lang=None):
+    keyboard = InlineKeyboardMarkup(row_width=2)
     
-    keyboard.row(
-        InlineKeyboardButton('🇺🇦 Українська', callback_data='ua'),
-        InlineKeyboardButton('🇷🇺 Русский', callback_data='ru'),
-    )
+    ua = InlineKeyboardButton('🇺🇦 Українська', callback_data='ua')
+    en = InlineKeyboardButton('🇬🇧 English', callback_data='en')
+    ru = InlineKeyboardButton('🇷🇺 Русский', callback_data='ru')
+    pl = InlineKeyboardButton('🇵🇱 Polski', callback_data='pl')
     
-    keyboard.row(
-        InlineKeyboardButton('🇬🇧 English', callback_data='en'),
-        InlineKeyboardButton('🇵🇱 Polski', callback_data='pl'),
-    )
+    languages = {
+        'ua': ua,
+        'en': en,
+        'ru': ru,
+        'pl': pl
+    }
+    
+    if current_lang:
+        languages.pop(current_lang)
+    
+    keyboard.add(*languages.values())
     
     return keyboard
 
@@ -82,19 +89,32 @@ def keyboard_for_product(index_product, total_products,index_media,total_media,c
 
     return keyboard
 
+def get_product_keyboard(product_id,cur_media,num_of_media,callback_data):
+    keyboard = InlineKeyboardMarkup()
+    
+    previous_media = InlineKeyboardButton("⬅️", callback_data=f"{callback_data}:previous_media") 
+    cur_media_btn = InlineKeyboardButton(f"{cur_media + 1}/{num_of_media}", callback_data=f"{callback_data}:-")
+    next_media = InlineKeyboardButton("➡️", callback_data=f"{callback_data}:next_media")
+    add_to_cart_button = InlineKeyboardButton("🛒 Додати до кошика", callback_data=f"add_to_cart:{product_id}")
+
+    keyboard.row(previous_media, cur_media_btn, next_media)
+    keyboard.row(add_to_cart_button)
+    
+    return keyboard
+    
 def generate_pages_btns(num_of_pages,cur_page,callback_data):
     if num_of_pages <= 1:
         return None
     keyboard = InlineKeyboardMarkup(row_width=5)
-    max_pages = 5
+    max_btn_pages = 5
 
     start = cur_page - 2
     if cur_page <= 0:
         start = 1
         
     end = start + num_of_pages
-    if end > max_pages:
-        end = max_pages
+    if end > max_btn_pages:
+        end = max_btn_pages
     
     for i in range(start,end,1):
         if i == cur_page:

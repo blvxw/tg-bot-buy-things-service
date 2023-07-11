@@ -1,5 +1,6 @@
 {
     "en": {
+        "settings_menu": "⚙️ Settings",
         "admin_panel": "👨‍💻 Admin panel",
         "enter_name_category": "Enter the name of the category",
         "choose_category_product": "Choose a category for the product",
@@ -55,10 +56,13 @@
         "signup_name_invalid": "Name can only contain letters",
         "signup_surname_invalid": "Surname can only contain letters",
         "signup_email_invalid": "Invalid email format",
-        "signup_phone_invalid": "Invalid phone number format (example: +44123456789)"
+        "signup_phone_invalid": "Invalid phone number format (example: +44123456789)",
+        
+        "successfully_set": "Successfully set ✅"
     },
 
     "pl": {
+        "settings_menu": "⚙️ Ustawienia",
         "admin_panel": "👨‍💻 Panel administratora",
         "enter_name_category": "Wpisz nazwę kategorii",
         "choose_category_product": "Wybierz kategorię dla produktu",
@@ -115,10 +119,12 @@
         "signup_name_invalid": "Imię może zawierać tylko litery",
         "signup_surname_invalid": "Nazwisko może zawierać tylko litery",
         "signup_email_invalid": "Nieprawidłowy format adresu e-mail",
-        "signup_phone_invalid": "Nieprawidłowy format numeru telefonu (przykład: +48123456789)"
+        "signup_phone_invalid": "Nieprawidłowy format numeru telefonu (przykład: +48123456789)",
+        "successfully_set": "Pomyślnie ustawiono ✅"
     },
 
     "ru": {
+        "settings_menu": "⚙️ Настройки",
         "admin_panel": "👨‍💻 Панель администратора",
         "enter_name_category": "Введите название категории",
         "choose_category_product": "Выберите категорию для продукта",
@@ -173,9 +179,11 @@
         "signup_name_invalid": "Имя должно содержать только буквы",
         "signup_surname_invalid": "Фамилия должна содержать только буквы",
         "signup_email_invalid": "Неверный формат электронной почты",
-        "signup_phone_invalid": "Неверный формат номера телефона (пример: +7123456789)"
+        "signup_phone_invalid": "Неверный формат номера телефона (пример: +7123456789)",
+        "successfully_set": "Успешно установлено ✅"
     },
     "ua": {
+        "settings_menu": "⚙️ Налаштування",
         "admin_panel": "👨‍💻 Панель адміністратора",
         "enter_name_category": "Введіть назву категорії",
         "choose_category_product": "Виберіть категорію для продукту",
@@ -231,6 +239,7 @@
         "signup_name_invalid": "Ім'я повинно містити тільки літери",
         "signup_surname_invalid": "Прізвище повинно містити тільки літери",
         "signup_email_invalid": "Неправильний формат електронної пошти",
-        "signup_phone_invalid": "Неправильний формат номера телефону (приклад: +380123456789)"
+        "signup_phone_invalid": "Неправильний формат номера телефону (приклад: +380123456789)",
+        "successfully_set": "Успішно встановлено ✅"
     }
 }

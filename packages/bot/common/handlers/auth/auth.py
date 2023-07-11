@@ -4,13 +4,9 @@ from packages.classes.user import User
 
 from packages.utils.language import loadTextByLanguage
 from packages.bot.common.states.get_info import GetInfo
-from packages.bot.common.handlers.menu import menu
-
-auth_validation = AuthValidation()
+from packages.bot.loader import dp, bot
 
 async def auth(bot, message, state):
-    await bot.send_message(message.chat.id, "Давайте авторизуємося")
-
     data = await state.get_data()
     language = data['language']
 
@@ -18,7 +14,8 @@ async def auth(bot, message, state):
     await state.update_data(prompt='name')
     await GetInfo.authState.set()
 
-async def getInfoHandler(bot, message, state):
+@dp.message_handler(state=GetInfo.authState)
+async def getInfoHandler(message, state):
     data = await state.get_data()
     language = data['language']
     prompt = data['prompt']
@@ -43,8 +40,9 @@ async def getInfoHandler(bot, message, state):
         await bot.send_message(message.chat.id, "Invalid prompt")
 
 async def handle_name(bot, message, state, language):
+    print(message.text)
     name = message.text
-    if not auth_validation.checkName(name):
+    if not AuthValidation().checkName(name):
         await bot.send_message(message.chat.id, loadTextByLanguage(language, 'signup_name_invalid'))
         return
     
@@ -54,7 +52,7 @@ async def handle_name(bot, message, state, language):
 
 async def handle_surname(bot, message, state, language):
     surname = message.text
-    if not auth_validation.checkSurname(surname):
+    if not AuthValidation().checkSurname(surname):
         await bot.send_message(message.chat.id, loadTextByLanguage(language, 'signup_surname_invalid'))
         return
     
@@ -64,7 +62,7 @@ async def handle_surname(bot, message, state, language):
 
 async def handle_email(bot, message, state, language):
     email = message.text
-    if not await auth_validation.checkEmail(email):
+    if not await AuthValidation().checkEmail(email):
         await bot.send_message(message.chat.id, loadTextByLanguage(language, 'signup_email_invalid'))
         return
 
@@ -74,12 +72,11 @@ async def handle_email(bot, message, state, language):
 
 async def handle_phone(bot, message, state, language):
     phone = message.text
-    if not await auth_validation.checkPhone(phone):
+    if not await AuthValidation().checkPhone(phone):
         await bot.send_message(message.chat.id, loadTextByLanguage(language, 'signup_phone_invalid'))
         return
 
     await state.update_data(phone=phone)
-
 
 async def create_user(bot,message,state,telegram_id):
     data = await state.get_data()
@@ -98,6 +95,4 @@ async def create_user(bot,message,state,telegram_id):
     
     prisma_service = PrismaService()
     await prisma_service.addUser(user)
-    
     await state.finish()
-    await menu(user.role == 'USER', bot, message, state,user.language)
