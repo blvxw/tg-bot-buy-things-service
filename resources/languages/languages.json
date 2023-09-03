@@ -99,8 +99,8 @@
         "signup_email_invalid": "Invalid email format",
         "signup_phone_invalid": "Invalid phone number format (example: +44123456789)",
         
-        "successfully_set": "Successfully set ✅"
-
+        "successfully_set": "Successfully set ✅",
+        "is_adult_category": "Is this category for adults?"
     },
     "pl": {
         "successfully_added": "Pomyślnie dodano! ✔️",
@@ -203,7 +203,8 @@
         "signup_surname_invalid": "Nazwisko może zawierać tylko litery",
         "signup_email_invalid": "Nieprawidłowy format adresu e-mail",
         "signup_phone_invalid": "Nieprawidłowy format numeru telefonu (przykład: +48123456789)",
-        "successfully_set": "Pomyślnie ustawiono ✅"
+        "successfully_set": "Pomyślnie ustawiono ✅",
+        "is_adult_category": "Czy ta kategoria jest dla dorosłych?"
 
     },  
 
@@ -306,8 +307,8 @@
         "signup_surname_invalid": "Фамилия должна содержать только буквы",
         "signup_email_invalid": "Неверный формат электронной почты",
         "signup_phone_invalid": "Неверный формат номера телефона (пример: +7123456789)",
-        "successfully_set": "Успешно установлено ✅"
-
+        "successfully_set": "Успешно установлено ✅",
+        "is_adult_category": "Эта категория для взрослых?"
     },
     "ua": {
         "successfully_added": "Успішно додано! ✔️",
@@ -410,6 +411,7 @@
         "signup_surname_invalid": "Прізвище повинно містити тільки літери",
         "signup_email_invalid": "Неправильний формат електронної пошти",
         "signup_phone_invalid": "Неправильний формат номера телефону (приклад: +380123456789)",
-        "successfully_set": "Успішно встановлено ✅"
+        "successfully_set": "Успішно встановлено ✅",
+        "is_adult_category": "Ця категорія для дорослих?"
     }
 }

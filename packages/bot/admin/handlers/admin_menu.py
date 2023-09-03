@@ -132,21 +132,30 @@ async def add_category(query: types.CallbackQuery):
     back_btn = InlineKeyboardButton(text=load_text(language,'back_btn'), callback_data=CallbackValues.ADMIN_CATEGORIES.value)
     keyboard.add(back_btn)
     await send_message(message.chat.id,load_text(language,'enter_category_name') , message.message_id, reply_markup=keyboard)
-    await AdminMenuState.create_category.set()
+    await AdminMenuState.isAdultCategory.set()
 
-@dp.message_handler(state=AdminMenuState.create_category)
-async def process_create_category(message: types.Message, state: FSMContext):
-    await state.reset_state(with_data=False)
+@dp.message_handler(state=AdminMenuState.isAdultCategory)
+async def process_isAdultCategory(message: types.Message, state: FSMContext):
     category_name = message.text
+    await state.update_data(category_name=category_name)
+    keyboard = yes_no_keyboard(language,'is_adult_category_chooice')
+    await send_message(message.chat.id, load_text(language,'is_adult_category'), message.message_id, reply_markup=keyboard)
+    await state.reset_state(with_data=False)
 
-    flag = await PrismaService().create_category(category_name)
+@dp.callback_query_handler(lambda query: check_query(query, 'is_adult_category_chooice'))
+async def process_create_category(query: types.Message, state: FSMContext):
+    chooice = query.data.split(':')[1]
+    data = await state.get_data()
+    category_name = data.get('category_name')
+    flag = await PrismaService().create_category(category_name, chooice == 'yes')
+
     if flag == False:
-        await bot.send_message(message.chat.id, load_text(language,'category_alredy_exists'))
-        await admin_menu(message)
+        await bot.send_message(query.from_user.id, load_text(language,'category_alredy_exists'))
+        await admin_menu(query.message)
         return
-    
-    await bot.send_message(message.chat.id, load_text(language,'category_added'))
-    await category_menu(message)
+    await category_menu(query)
+    await bot.send_message(query.from_user.id, load_text(language,'category_added'))
+
 
 @dp.callback_query_handler(lambda query: check_query(query, 'add_subcategory'))
 async def add_subcategory(query: types.CallbackQuery):
@@ -267,7 +276,7 @@ async def process_add_quantities(message: types.Message, state: FSMContext):
 
     await state.update_data(item_quantities=item_quantities)
     await bot.send_message(message.chat.id, load_text(language, 'add_media'))
-    await AdminMenuState.add_media()
+    await AdminMenuState.add_media.set()
 
 
 @dp.message_handler(state=AdminMenuState.add_media, content_types=[types.ContentType.PHOTO, types.ContentType.TEXT, types.ContentType.VIDEO])
