@@ -1,9 +1,11 @@
-# > bot stuff
+# >>> bot stuff
 from aiogram import executor
 from packages.bot.loader import *
 
-# > handlers
-from packages.bot.common.handlers.start import *
+# >>> handlers
+from packages.bot.common.start import *
+from packages.bot.user.handlers.show_adult_content import *
+from packages.bot.user.handlers.help import *
 
 class BotApp():
     def __init__(self):

@@ -1,12 +1,10 @@
 generator client {
-  provider = "prisma-client-py"  
-  recursive_type_depth = 5
+  provider = "prisma-client-py"
 }
 
-datasource db { 
+datasource db {
   provider = "mongodb"
-  //!
-  url      = env("DATABASE_URL")
+  url      = env("DATABASE_URL_DEMO")
 }
 
 enum Role {
@@ -21,78 +19,119 @@ enum Language {
   pl
 }
 
+enum OrderStatus {
+  in_progress
+  confirmed
+  in_delivery
+  delivered
+  canceled
+}
+
 model User {
-  id          String     @id @default(auto()) @map("_id") @db.ObjectId
-  name        String 
-  surname     String 
-  phone       String @unique
-  telegram_id String @unique 
-  email       String @unique
-  adultContent Boolean @default(false)
-  language    Language
-  role        Role @default(USER)
-  cart       Cart[]
-}
-
-model ProductVariant {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  productId   String   @db.ObjectId
-  color       String
-  sizes       Size[]
-  discounts   Discount[]
-  product     Product  @relation(fields: [productId], references: [id])
-  cartItems   cartItem[]
-}
-
-model Size {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  name        String
-  quantity    Int
-  variantId   String   @db.ObjectId
-  variant     ProductVariant @relation(fields: [variantId], references: [id])
-}
-
-model Discount {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  value       Float
-  variantId   String   @db.ObjectId
-  variant     ProductVariant @relation(fields: [variantId], references: [id])
-}
-
-model Product {
-  id            String           @id @default(auto()) @map("_id") @db.ObjectId
-  name          String
-  description   String
-  price         Float
-  discount      Float
-  media      String[]
-  categoryId    String           @db.ObjectId
-  category      Category         @relation(fields: [categoryId], references: [id])
-  variants      ProductVariant[]
-  cartItems     cartItem[]
+  id           String     @id @default(auto()) @map("_id") @db.ObjectId
+  name         String?
+  surname      String?
+  patronymic   String?
+  phone        String?   @unique
+  telegram_id  String    @unique
+  email        String?    @unique
+  adultContent Boolean    @default(false)
+  language     Language
+  role         Role       @default(USER)
+  cart         Cart[]
+  orders       Order[]
 }
 
 model Category {
-  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  id           String    @id @default(auto()) @map("_id") @db.ObjectId
+  name         String
+  adultContent Boolean   @default(false)
+  subCategories SubCategory[]
+}
+
+model SubCategory {
+  id           String    @id @default(auto()) @map("_id") @db.ObjectId
+  categoryId   String    @db.ObjectId @map("category_id")
+  name         String
+  products     Product[]
+  category     Category  @relation(fields: [categoryId], references: [id])
+}
+
+model Product {
+  id            String         @id @default(auto()) @map("_id") @db.ObjectId
+  name          String
+  description   String
+  price         Float
+  purchasePrice Float?
+  discount      Float
+  media         String[]
+  subcategoryId    String         @db.ObjectId @map("subcategory_id")
+  subcategory      SubCategory       @relation(fields: [subcategoryId], references: [id])
+  variants      ProductVariant[]
+  items         Item[]
+}
+
+model ProductVariant {
+  id          String            @id @default(auto()) @map("_id") @db.ObjectId
+  productId   String            @db.ObjectId
+  color       String
+  sizes       Size[]
+  discounts   Discount[]
+  product     Product           @relation(fields: [productId], references: [id])
+  items       Item[]
+}
+
+model Size {
+  id          String            @id @default(auto()) @map("_id") @db.ObjectId
   name        String
-  adultContent Boolean @default(false)
-  products    Product[]
+  quantity    Int
+  variantId   String            @db.ObjectId
+
+  variant     ProductVariant    @relation(fields: [variantId], references: [id])
 }
 
-model Cart{
-    id         String    @id @default(auto()) @map("_id") @db.ObjectId
-    userId      String    @db.ObjectId
-    user       User      @relation(fields: [userId], references: [id])
-    items       cartItem[]
+model Discount {
+  id          String            @id @default(auto()) @map("_id") @db.ObjectId
+  value       Float
+  variantId   String            @db.ObjectId
+  variant     ProductVariant    @relation(fields: [variantId], references: [id])
 }
 
-model cartItem{
-    id          String    @id @default(auto()) @map("_id") @db.ObjectId
-    productId   String    @db.ObjectId
-    productVariantId String @db.ObjectId
-    quantity    Int
-    cartId      String    @db.ObjectId
-    cart        Cart      @relation(fields: [cartId], references: [id])
-    product     Product   @relation(fields: [productId], references: [id])
-    productVariant ProductVariant @relation(fields: [productVariantId], references: [id])
+model Item {
+  id                String          @id @default(auto()) @map("_id") @db.ObjectId
+  productId         String          @db.ObjectId
+  productVariantId  String          @db.ObjectId
+  quantity          Int
+  cartId            String?          @db.ObjectId
+  orderId           String?         @db.ObjectId
+
+  order             Order?          @relation(fields: [orderId], references: [id])
+  cart              Cart?            @relation(fields: [cartId], references: [id])
+  product           Product         @relation(fields: [productId], references: [id])
+  productVariant    ProductVariant  @relation(fields: [productVariantId], references: [id])
+}
+
+model Cart {
+  id         String      @id @default(auto()) @map("_id") @db.ObjectId
+  userId     String      @db.ObjectId
+  user       User        @relation(fields: [userId], references: [id])
+  cartItems      Item[]
+}
+
+model Order {
+  id          String         @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String         @db.ObjectId
+  user        User           @relation(fields: [userId], references: [id])
+  prepayment_photo String
+  address     String
+  totalAmount Float
+  comment     String?
+  status      OrderStatus   @default(in_progress)
+  orderItems       Item[]
+}
+
+model Question {
+  id               String   @id @default(auto()) @map("_id") @db.ObjectId
+  user_telegram_id String
+  question         String
 }

@@ -13,7 +13,7 @@ async def get_current_user(user_telegram_id):
         pass
 
     if current_user is None:
-        current_user = await PrismaService().findUserByTelegramId(user_telegram_id)
+        current_user = await PrismaService().get_user(user_telegram_id)
         await state.update_data(current_user=current_user)
 
     return current_user

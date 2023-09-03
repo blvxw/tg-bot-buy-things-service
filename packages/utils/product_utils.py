@@ -1,5 +1,4 @@
-
-def format_caption(product):
+def format_caption(product,product_variant=None):
     caption = f"<b>{product.name}</b>\n\n"
     caption += f"Опис: {product.description}\n\n"
     if product.discount != 0:
@@ -7,8 +6,13 @@ def format_caption(product):
     else:
         caption += f"Ціна: {product.price} грн.\n\n"
 
+    if product_variant is not None:
+        caption += f"Колір: {product_variant.color}\n"
+        caption += f"Розмір: {product_variant.sizes[0].name}\n\n"
+        return caption
+    
     colors_and_sizes = {}
-
+    
     for variant in product.variants:
         color = variant.color
 

@@ -1,12 +1,9 @@
 import json
-from packages.services.prisma_service import PrismaService
 
-async def getTextByTelegramId(telegram_id,text):
-    language = await PrismaService().getLangByTelegramId(telegram_id)
-    return loadTextByLanguage(language,text)
-    
-def loadTextByLanguage(language,text):
+languages = ['en', 'ru', 'pl', 'ua']
+
+def load_text(language, key):
     with open('resources/languages/languages.json', encoding='utf-8') as f:
         data = json.load(f)
-        return data[language][text]
+        return data[language][key]
 
