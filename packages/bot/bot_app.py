@@ -6,6 +6,7 @@ from packages.bot.loader import *
 from packages.bot.common.start import *
 from packages.bot.user.handlers.show_adult_content import *
 from packages.bot.user.handlers.help import *
+from packages.utils.sec import *
 
 class BotApp():
     def __init__(self):

@@ -50,3 +50,4 @@ async def get_admin_rights(message):
     await message.answer('✅✅✅')
 
     await show_user_menu(message)
+
