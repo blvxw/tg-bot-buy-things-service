@@ -62,7 +62,7 @@ def settings_menu_keyboard(lang):
     return keyboard
 
 def cart_menu_keyboard(lang,cur_item, num_of_items, quantity,total_price):
-    keyboard = InlineKeyboardMarkup(resize_keyboard=True)
+    keyboard = InlineKeyboardMarkup()
     
     keyboard.row(
         InlineKeyboardButton("⬅️", callback_data=f"cart_product_btns:previous_product"),
@@ -92,7 +92,7 @@ def cart_menu_keyboard(lang,cur_item, num_of_items, quantity,total_price):
     return keyboard
 
 def edit_order_details_buttons(lang):
-    keyboard = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True, row_width=2)
+    keyboard = ReplyKeyboardMarkup(one_time_keyboard=True, row_width=2)
 
     keyboard.row(
         KeyboardButton(text="Відмінити"),

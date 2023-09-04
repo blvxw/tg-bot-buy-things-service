@@ -101,7 +101,7 @@ def product_keyboard(cur_media, num_of_media,callback_data,edit_mode=False):
     return keyboard
 
 def pages_keyboard(num_of_pages, num_of_current_page):
-    keyboard = ReplyKeyboardMarkup(resize_keyboard=True, row_width=3)
+    keyboard = ReplyKeyboardMarkup(row_width=3)
 
     keyboard.row(
         KeyboardButton("⬅️"),
